@@ -155,6 +155,8 @@ body {
 .status-bar .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 .dot.ok { background: #27ae60; } .dot.warn { background: #f39c12; } .dot.err { background: var(--danger); }
 
+.disclaimer { text-align: center; font-size: 11px; color: #aaa; padding: 6px 20px; flex-shrink: 0; }
+
 .empty-state {
   flex: 1; display: flex; flex-direction: column; align-items: center;
   justify-content: center; color: var(--text-secondary); gap: 12px; padding: 40px;
@@ -239,6 +241,8 @@ body {
   <span>状态：</span><span class="dot" id="statusDot"></span>
   <span id="statusText">未配置API</span>
 </div>
+
+<div class="disclaimer">内容由AI生成，请仔细甄别</div>
 
 <!-- API设置面板 -->
 <div class="overlay" id="settingsOverlay">
