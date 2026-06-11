@@ -162,7 +162,6 @@ body {
   flex: 1; display: flex; flex-direction: column; align-items: center;
   justify-content: center; color: var(--text-secondary); gap: 12px; padding: 40px;
 }
-.empty-state .big-icon { font-size: 48px; }
 .empty-state p { font-size: 14px; text-align: center; line-height: 1.6; }
 
 .toast {
@@ -185,7 +184,6 @@ body {
   width: 90%; max-width: 380px; box-shadow: 0 12px 40px rgba(0,0,0,.2);
   text-align: center;
 }
-.lock-panel .lock-icon { font-size: 42px; margin-bottom: 12px; }
 .lock-panel h2 { font-size: 18px; margin-bottom: 6px; color: var(--text); }
 .lock-panel .lock-hint { font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; }
 .lock-panel input {
@@ -208,20 +206,19 @@ body {
 <!-- 解锁门 -->
 <div class="lock-overlay" id="lockOverlay">
   <div class="lock-panel">
-    <div class="lock-icon">🔒</div>
     <h2>知识库已加密</h2>
     <p class="lock-hint">请输入访问密码解锁知识库</p>
     <input type="password" id="lockPassword" placeholder="输入密码..." onkeydown="if(event.key==='Enter')unlockKB()">
-    <button class="lock-btn" onclick="unlockKB()">🔓 解锁</button>
+    <button class="lock-btn" onclick="unlockKB()">解锁知识库</button>
     <div class="lock-err" id="lockErr"></div>
   </div>
 </div>
 
 <div class="header">
-  <h1><span>🐑</span>美羊AI学习力智能顾问</h1>
+  <h1>美羊AI学习力智能顾问</h1>
   <div class="header-actions">
-    <button class="btn" onclick="clearChat()">🗑 清空</button>
-    <button class="btn btn-primary" onclick="openSettings()">⚙ API</button>
+    <button class="btn" onclick="clearChat()">清空对话</button>
+    <button class="btn btn-primary" onclick="openSettings()">API 配置</button>
   </div>
 </div>
 
@@ -230,13 +227,12 @@ body {
   <div class="chat-area">
     <div class="chat-messages" id="chatMessages">
       <div class="empty-state" id="emptyState">
-        <span class="big-icon">📚</span>
-        <p>美羊AI学习力系统赋能专家已就绪<br>基于北师大杨娟教授团队BMA学习力模型<br>请输入你的问题，开始对话吧</p>
+        <p>美羊AI学习力系统赋能专家已就绪<br>基于北师大杨娟教授团队BMA学习力模型<br>请输入您的问题，开始对话</p>
       </div>
     </div>
     <div class="chat-input-area">
-      <input type="text" id="userInput" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter') sendMessage()">
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+      <input type="text" id="userInput" placeholder="输入问题..." onkeydown="if(event.key==='Enter') sendMessage()">
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">发送</button>
     </div>
   </div>
 
@@ -250,7 +246,7 @@ body {
 <!-- API设置面板 -->
 <div class="overlay" id="settingsOverlay">
   <div class="panel">
-    <h2>⚙ API 配置</h2>
+    <h2>API 配置</h2>
     <div class="form-group">
       <label>API 地址</label>
       <input type="url" id="apiBaseUrl" placeholder="https://api.openai.com/v1">
@@ -266,7 +262,7 @@ body {
     </div>
     <div class="form-actions">
       <button class="btn" onclick="closeSettings()">取消</button>
-      <button class="btn btn-primary" onclick="saveSettings()">💾 保存</button>
+      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
     </div>
   </div>
 </div>
@@ -531,7 +527,7 @@ function sendMessage() {
     const matches = searchKB(text);
     const badge = document.createElement('span');
     badge.className = 'rag-badge';
-    badge.textContent = '📚 检索到 ' + matches.length + ' 条知识';
+    badge.textContent = '检索到 ' + matches.length + ' 条知识';
     aiMsgEl.querySelector('.avatar').after(badge);
   }
 
@@ -547,7 +543,7 @@ function sendMessage() {
       conversationHistory.push({ role: 'assistant', content: fullContent });
       updateStatus(true);
     } catch (err) {
-      bubble.textContent = '❌ ' + err.message;
+      bubble.textContent = '错误：' + err.message;
       aiMsgEl.classList.remove('typing');
       conversationHistory.pop();
       updateStatus(false);
@@ -565,7 +561,7 @@ function addMessage(role, content, isTyping = false) {
 
   const avatar = document.createElement('div');
   avatar.className = 'avatar';
-  avatar.textContent = role === 'user' ? '👤' : '🐑';
+  avatar.textContent = role === 'user' ? '我' : '美羊';
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
@@ -595,8 +591,7 @@ function clearChat() {
   conversationHistory = [];
   document.getElementById('chatMessages').innerHTML = `
     <div class="empty-state" id="emptyState">
-      <span class="big-icon">📚</span>
-      <p>美羊AI学习力系统赋能专家已就绪<br>基于北师大杨娟教授团队BMA学习力模型<br>请输入你的问题，开始对话吧</p>
+      <p>美羊AI学习力系统赋能专家已就绪<br>基于北师大杨娟教授团队BMA学习力模型<br>请输入您的问题，开始对话</p>
     </div>`;
 }
 
@@ -647,7 +642,7 @@ function saveSettings() {
   localStorage.setItem('meiyang_settings', JSON.stringify(s));
   closeSettings();
   updateStatus(null);
-  showToast('配置已保存 ✓', 'success');
+  showToast('配置已保存', 'success');
 }
 
 function updateStatus(ok) {
