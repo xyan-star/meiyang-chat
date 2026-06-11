@@ -172,9 +172,50 @@ body {
 }
 .toast.show { opacity: 1; }
 .toast.success { background: #27ae60; } .toast.error { background: var(--danger); }
+
+/* ===== 解锁门 ===== */
+.lock-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,.5); z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+}
+.lock-overlay.hidden { display: none; }
+.lock-panel {
+  background: var(--card); border-radius: 16px; padding: 32px 28px;
+  width: 90%; max-width: 380px; box-shadow: 0 12px 40px rgba(0,0,0,.2);
+  text-align: center;
+}
+.lock-panel .lock-icon { font-size: 42px; margin-bottom: 12px; }
+.lock-panel h2 { font-size: 18px; margin-bottom: 6px; color: var(--text); }
+.lock-panel .lock-hint { font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; }
+.lock-panel input {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: 10px; font-size: 15px; outline: none; text-align: center;
+  letter-spacing: 2px; transition: border .15s;
+}
+.lock-panel input:focus { border-color: var(--primary); }
+.lock-panel .lock-btn {
+  width: 100%; margin-top: 14px; padding: 10px; border: none;
+  border-radius: 10px; background: var(--primary); color: #fff;
+  font-size: 15px; font-weight: 600; cursor: pointer; transition: background .15s;
+}
+.lock-panel .lock-btn:hover { background: var(--primary-hover); }
+.lock-panel .lock-err { font-size: 12px; color: var(--danger); margin-top: 8px; min-height: 18px; }
 </style>
 </head>
 <body>
+
+<!-- 解锁门 -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-panel">
+    <div class="lock-icon">🔒</div>
+    <h2>知识库已加密</h2>
+    <p class="lock-hint">请输入访问密码解锁知识库</p>
+    <input type="password" id="lockPassword" placeholder="输入密码..." onkeydown="if(event.key==='Enter')unlockKB()">
+    <button class="lock-btn" onclick="unlockKB()">🔓 解锁</button>
+    <div class="lock-err" id="lockErr"></div>
+  </div>
+</div>
 
 <div class="header">
   <h1><span>🐑</span>美羊AI学习力智能顾问</h1>
@@ -233,29 +274,87 @@ body {
 <div class="toast" id="toast"></div>
 
 <script>
-// ==================== 知识库 ====================
+// ==================== 知识库（AES加密） ====================
 let knowledgeBase = [];
+let kbEncryptedData = null; // { enc: "...", algo: "aes-256-cbc" }
 const ragEnabled = true;
 
-// Load knowledge base from knowledge_base.json
-async function initKB() {
+// Fetch encrypted knowledge base
+async function fetchEncryptedKB() {
   try {
     const resp = await fetch('knowledge_base.json');
     if (resp.ok) {
-      knowledgeBase = await resp.json();
-    } else {
-      // Fallback: use localStorage if available
-      loadKBFallback();
+      kbEncryptedData = await resp.json();
     }
-  } catch {
-    loadKBFallback();
-  }
+  } catch { /* will show unlock */ }
 }
-function loadKBFallback() {
-  try {
-    const raw = localStorage.getItem('meiyang_kb');
-    if (raw) knowledgeBase = JSON.parse(raw);
-  } catch { /* ignore */ }
+
+// AES-256-CBC decrypt via Web Crypto API
+async function decryptKB(password) {
+  if (!kbEncryptedData || !kbEncryptedData.enc) throw new Error('未找到知识库数据');
+
+  const raw = Uint8Array.from(atob(kbEncryptedData.enc), c => c.charCodeAt(0));
+  const iv = raw.slice(0, 16);
+  const ciphertext = raw.slice(16);
+
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: enc.encode('meiyang-salt'), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-CBC', length: 256 },
+    false,
+    ['decrypt']
+  );
+
+  const decrypted = await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, key, ciphertext);
+  const json = new TextDecoder().decode(decrypted);
+  knowledgeBase = JSON.parse(json);
+  
+  // Cache in sessionStorage for this session
+  sessionStorage.setItem('meiyang_kb_unlocked', '1');
+  sessionStorage.setItem('meiyang_kb_data', json);
+}
+
+function unlockKB() {
+  const input = document.getElementById('lockPassword');
+  const errEl = document.getElementById('lockErr');
+  const password = input.value.trim();
+  
+  if (!password) {
+    errEl.textContent = '请输入密码';
+    return;
+  }
+
+  errEl.textContent = '';
+  decryptKB(password).then(() => {
+    document.getElementById('lockOverlay').classList.add('hidden');
+    document.getElementById('userInput').focus();
+  }).catch(() => {
+    errEl.textContent = '密码错误，请重试';
+    input.value = '';
+    input.focus();
+  });
+}
+
+async function initKB() {
+  // Check if already unlocked this session
+  const cached = sessionStorage.getItem('meiyang_kb_data');
+  if (cached) {
+    try {
+      knowledgeBase = JSON.parse(cached);
+      document.getElementById('lockOverlay').classList.add('hidden');
+      return;
+    } catch { sessionStorage.removeItem('meiyang_kb_data'); }
+  }
+
+  await fetchEncryptedKB();
+  
+  if (kbEncryptedData && kbEncryptedData.enc) {
+    // Show unlock screen
+    document.getElementById('lockOverlay').classList.remove('hidden');
+    document.getElementById('lockPassword').focus();
+  }
 }
 
 // ==================== RAG 检索 ====================
