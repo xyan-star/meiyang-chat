@@ -100,11 +100,8 @@ body {
 .typing .bubble span:nth-child(3) { animation-delay: .4s; }
 @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
 
-.rag-badge {
-  display: inline-block; font-size: 10px; background: #e8ecff;
-  color: var(--primary); padding: 2px 8px; border-radius: 10px;
-  margin-left: 8px; vertical-align: middle;
-}
+
+
 
 .chat-input-area {
   padding: 12px 20px; border-top: 1px solid var(--border);
@@ -521,15 +518,6 @@ function sendMessage() {
     { role: 'system', content: systemPrompt },
     ...conversationHistory,
   ];
-
-  // Show RAG indicator if used
-  if (ragContext) {
-    const matches = searchKB(text);
-    const badge = document.createElement('span');
-    badge.className = 'rag-badge';
-    badge.textContent = '检索到 ' + matches.length + ' 条知识';
-    aiMsgEl.querySelector('.avatar').after(badge);
-  }
 
   let fullContent = '';
   (async () => {
